@@ -1,0 +1,9 @@
+__pycache__/
+*.pyc
+.venv/
+node_modules/
+.vercel/
+.DS_Store
+# large optional offline assets - create with scripts/vendor.sh
+vendor/tasks-vision/
+models/*.task

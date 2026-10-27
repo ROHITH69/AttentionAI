@@ -1,0 +1,14 @@
+{
+  "name": "attentionai",
+  "version": "2.0.0",
+  "description": "AttentionAI v2 - real-time attention and drowsiness tracking that runs privately in your browser.",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "dev": "python server.py",
+    "start": "python server.py",
+    "test": "node tests/classifier.test.mjs"
+  },
+  "author": "Rohith",
+  "license": "MIT"
+}

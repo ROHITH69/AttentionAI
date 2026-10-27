@@ -1,0 +1,176 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>AttentionAI - know when your focus drifts</title>
+  <meta name="description" content="Real-time attention and drowsiness tracking that runs privately in your browser using your webcam.">
+  <meta name="theme-color" content="#120f26">
+  <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Instrument+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body data-state="idle" data-theme="dark">
+<div class="aura" aria-hidden="true"></div>
+
+<header class="top">
+  <a class="brand" href="./" aria-label="AttentionAI home">
+    <span class="brand-mark" aria-hidden="true"></span>
+    <span>AttentionAI</span>
+  </a>
+  <nav class="top-actions">
+    <button class="icon-btn" id="btnHistory" title="Session history" aria-label="Session history">History</button>
+    <button class="icon-btn" id="btnSettings" title="Settings" aria-label="Settings">Settings</button>
+    <button class="icon-btn" id="btnTheme" title="Switch theme" aria-label="Switch theme">Theme</button>
+  </nav>
+</header>
+
+<div class="banner" id="banner" role="alert" hidden>
+  <span id="bannerText"></span>
+  <button class="banner-x" id="bannerClose" aria-label="Silence alarm">Silence</button>
+</div>
+
+<main>
+  <!-- Landing -->
+  <section id="landing" class="landing">
+    <div class="eyes big" id="heroEyes" aria-hidden="true">
+      <div class="eye"><i class="pupil"></i></div>
+      <div class="eye"><i class="pupil"></i></div>
+    </div>
+    <h1>Know the moment your focus drifts.</h1>
+    <p class="lede">AttentionAI watches your eyes, gaze and head position through your webcam, tells you when you are focused, distracted or getting sleepy, and nudges you back. Everything is processed on your device.</p>
+    <div class="cta">
+      <button class="btn primary" id="btnStart">Start focus session</button>
+      <button class="btn ghost" id="btnDemo">Try the demo without a camera</button>
+    </div>
+    <ol class="pipeline" aria-label="How it works">
+      <li><b>Webcam</b><span>Your camera, only while a session runs</span></li>
+      <li><b>Analyze</b><span>478 face points, tracked live</span></li>
+      <li><b>Understand</b><span>Blinks, gaze and head pose become a state</span></li>
+      <li><b>Alert</b><span>A sound and banner when you drift</span></li>
+      <li><b>Measure</b><span>Score, streaks, history and CSV export</span></li>
+    </ol>
+    <p class="privacy">Private by design. No video, images or data are uploaded anywhere. Sessions are saved only in this browser.</p>
+  </section>
+
+  <!-- Dashboard -->
+  <section id="app" class="app" hidden>
+    <div class="col-main">
+      <div class="stage" id="stage">
+        <video id="cam" playsinline muted></video>
+        <canvas id="overlay"></canvas>
+        <div class="hud hud-top">
+          <span class="chip"><i class="dot"></i><span id="liveLabel">Live</span></span>
+          <span class="chip" id="fps">0 fps</span>
+        </div>
+        <div class="hud hud-bottom"><span class="state-tag" id="stateTag">Getting ready</span></div>
+        <div class="stage-note" id="stageNote" hidden></div>
+        <div class="calib" id="calib" hidden>
+          <div class="calib-ring" id="calibRing"><span id="calibNum">3</span></div>
+          <p id="calibText">Look at the screen and sit the way you normally work.</p>
+        </div>
+        <div class="loading" id="loading"><div class="spinner"></div><p id="loadingText">Starting up…</p></div>
+      </div>
+
+      <div class="controls">
+        <button class="btn small" id="btnPause">Pause</button>
+        <button class="btn small" id="btnCalib">Recalibrate</button>
+        <button class="btn small" id="btnMute">Mute alarm</button>
+        <button class="btn small" id="btnReset">Reset stats</button>
+        <button class="btn small danger" id="btnEnd">End session</button>
+      </div>
+
+      <div class="card">
+        <div class="card-head"><h3>Attention timeline</h3><span class="muted">last 5 minutes</span></div>
+        <canvas id="timeline" class="chart-wide"></canvas>
+      </div>
+    </div>
+
+    <aside class="col-side">
+      <div class="card status">
+        <div class="eyes" id="eyes" aria-hidden="true">
+          <div class="eye"><i class="pupil"></i></div>
+          <div class="eye"><i class="pupil"></i></div>
+        </div>
+        <div class="status-text">
+          <h2 id="stateName">Getting ready</h2>
+          <p id="stateMsg">Hold still for a moment while I learn your setup.</p>
+          <div class="bar"><i id="confBar"></i></div>
+          <small class="muted" id="confText">Confidence 0%</small>
+        </div>
+        <div class="ring" id="scoreRing" role="img" aria-label="Attention score"><span id="scoreNum">0</span><small>score</small></div>
+      </div>
+
+      <div class="tiles">
+        <div class="tile"><b id="tEar">0.00</b><span>Eye openness</span></div>
+        <div class="tile"><b id="tBlink">0</b><span>Blinks per minute</span></div>
+        <div class="tile"><b id="tPerclos">0%</b><span>Eyes closed (30s)</span></div>
+        <div class="tile"><b id="tYawn">0</b><span>Yawns</span></div>
+      </div>
+
+      <div class="card pose">
+        <div class="pad" id="pad" aria-hidden="true"><i id="padDot"></i></div>
+        <dl>
+          <div><dt>Gaze</dt><dd id="gazeLabel">Center</dd></div>
+          <div><dt>Yaw</dt><dd id="pYaw">0°</dd></div>
+          <div><dt>Pitch</dt><dd id="pPitch">0°</dd></div>
+          <div><dt>Roll</dt><dd id="pRoll">0°</dd></div>
+        </dl>
+      </div>
+
+      <div class="card summary">
+        <div class="card-head"><h3>This session</h3><b class="mono" id="sTime">00:00</b></div>
+        <div class="donut-row">
+          <div class="donut"><canvas id="donut"></canvas><div><b id="pctFocus">0%</b><span>focused</span></div></div>
+          <ul class="legend">
+            <li><i style="background:var(--focus)"></i>Focused <b id="lgFocus">0%</b></li>
+            <li><i style="background:var(--drift)"></i>Distracted <b id="lgDrift">0%</b></li>
+            <li><i style="background:var(--drowse)"></i>Drowsy <b id="lgDrowse">0%</b></li>
+            <li><i style="background:var(--away)"></i>Away <b id="lgAway">0%</b></li>
+          </ul>
+        </div>
+        <div class="stats">
+          <div><b id="sBest">0s</b><span>Best focus streak</span></div>
+          <div><b id="sLongest">0s</b><span>Longest distraction</span></div>
+          <div><b id="sAvg">0</b><span>Average score</span></div>
+          <div><b id="sAlerts">0</b><span>Alerts</span></div>
+        </div>
+        <button class="btn small wide" id="btnCSV">Download session CSV</button>
+      </div>
+    </aside>
+  </section>
+</main>
+
+<footer class="foot">Made with <span class="heart" aria-label="love">&hearts;</span> by Rohith</footer>
+
+<!-- Settings -->
+<dialog id="dlgSettings" class="dlg">
+  <form method="dialog" class="dlg-head"><h3>Settings</h3><button class="icon-btn" aria-label="Close">Close</button></form>
+  <div class="field"><label for="setPreset">Sensitivity</label>
+    <select id="setPreset"><option value="relaxed">Relaxed</option><option value="balanced">Balanced</option><option value="strict">Strict</option></select>
+    <small class="muted">How far you can turn your head or eyes before it counts as looking away.</small></div>
+  <div class="field"><label for="setDistract">Distracted after <output id="setDistractVal"></output></label>
+    <input type="range" id="setDistract" min="1" max="8" step="0.5"></div>
+  <div class="field"><label for="setAlarmDelay">Alarm after <output id="setAlarmDelayVal"></output> more of distraction</label>
+    <input type="range" id="setAlarmDelay" min="0" max="20" step="1"></div>
+  <div class="field"><label for="setVolume">Alarm volume <output id="setVolumeVal"></output></label>
+    <input type="range" id="setVolume" min="0" max="1" step="0.05"></div>
+  <label class="check"><input type="checkbox" id="setAlarm"> Play alarm sounds</label>
+  <label class="check"><input type="checkbox" id="setMesh"> Show face outline on video</label>
+  <div class="dlg-foot"><button class="btn small" id="btnTestSound" type="button">Test sound</button><button class="btn small ghost" id="btnResetSettings" type="button">Restore defaults</button></div>
+</dialog>
+
+<!-- History -->
+<dialog id="dlgHistory" class="dlg wide">
+  <form method="dialog" class="dlg-head"><h3>Session history</h3><button class="icon-btn" aria-label="Close">Close</button></form>
+  <canvas id="histChart" class="chart-wide short"></canvas>
+  <ul class="hist" id="histList"></ul>
+  <div class="dlg-foot"><button class="btn small ghost" id="btnClearHist" type="button">Clear history</button></div>
+</dialog>
+
+<div class="toasts" id="toasts" aria-live="polite"></div>
+<script type="module" src="js/main.js"></script>
+</body>
+</html>
